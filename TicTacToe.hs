@@ -62,6 +62,8 @@ printBoard = (>>= putStrLn) . boardString
 other X = O
 other O = X
 
+putErrLn = hPutStrLn stderr
+
 moveLoop board player = do
     putStrLn $ "Player " ++ show player ++ "'s Turn"
     printBoard board
@@ -74,7 +76,7 @@ moveLoop board player = do
                     Nothing -> invalidMove
                     Just l -> makeMove l
             invalidMove = do
-                hPutStrLn stderr "Invalid location! Try again."
+                putErrLn "Invalid location! Try again."
                 moveLoop'
             makeMove location = do
                 eith <- getData board location
@@ -110,7 +112,7 @@ gameLoop = do
                 board <- makeBoard s
                 moveLoop board X
     where   badBoardSize = do
-                hPutStrLn stderr "Bad board size! Try again."
+                putErrLn "Bad board size! Try again."
                 gameLoop
 
 testBoard = do
