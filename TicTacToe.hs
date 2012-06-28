@@ -62,6 +62,42 @@ printBoard = (>>= putStrLn) . boardString
 other X = O
 other O = X
 
+moveLoop board player = do
+    putStrLn $ "Player " ++ show player ++ "'s Turn"
+    printBoard board
+    moveLoop'
+    where   moveLoop' = do
+                putStr "Enter move location (row, col) (top left is (1, 1)): "
+                hFlush stdout
+                location <- getLine
+                case liftM fst . listToMaybe $ reads location of
+                    Nothing -> invalidMove
+                    Just l -> makeMove l
+            invalidMove = do
+                hPutStrLn stderr "Invalid location! Try again."
+                moveLoop'
+            makeMove location = do
+                eith <- getData board location
+                case eith of
+                    Left e -> invalidMove
+                    Right d -> case d of
+                        Nothing -> makeMove' location
+                        _ -> invalidMove
+            makeMove' location = do
+                setData board location (Just player)
+                won <- playerWon board
+                if won
+                    then do
+                        printBoard board
+                        putStrLn $ "Player " ++ show player ++ " won!"
+                    else do
+                        tie <- isTie board
+                        if tie
+                            then do
+                                printBoard board
+                                putStrLn "It's a tie!"
+                            else moveLoop board (other player)
+
 gameLoop = do
     putStr "Enter the size of the tic tac toe board: "
     hFlush stdout
@@ -72,43 +108,8 @@ gameLoop = do
             then badBoardSize
             else do
                 board <- makeBoard s
-                gameLoop' board X
-    where   gameLoop' board player = do
-                putStrLn $ "Player " ++ show player ++ "'s Turn"
-                printBoard board
-                gameLoop''
-                where   gameLoop'' = do
-                            putStr "Enter move location (row, col) (top left is (1, 1)): "
-                            hFlush stdout
-                            location <- getLine
-                            case liftM fst . listToMaybe $ reads location of
-                                Nothing -> invalidMove
-                                Just l -> makeMove l
-                        invalidMove = do
-                            hPutStrLn stderr "Invalid location! Try again."
-                            gameLoop''
-                        makeMove location = do
-                            eith <- getData board location
-                            case eith of
-                                Left e -> invalidMove
-                                Right d -> case d of
-                                    Nothing -> makeMove' location
-                                    _ -> invalidMove
-                        makeMove' location = do
-                            setData board location (Just player)
-                            won <- playerWon board
-                            if won
-                                then do
-                                    printBoard board
-                                    putStrLn $ "Player " ++ show player ++ " won!"
-                                else do
-                                    tie <- isTie board
-                                    if tie
-                                        then do
-                                            printBoard board
-                                            putStrLn "It's a tie!"
-                                        else gameLoop' board (other player)
-            badBoardSize = do
+                moveLoop board X
+    where   badBoardSize = do
                 hPutStrLn stderr "Bad board size! Try again."
                 gameLoop
 
